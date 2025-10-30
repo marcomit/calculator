@@ -1,17 +1,37 @@
 package main
 
 import (
-	"alice/lexer"
-	"alice/parser"
+	"bufio"
+	"calculator/lexer"
+	"calculator/parser"
+	"fmt"
+	"os"
+	"strings"
 )
 
 func main() {
-	t2 := lexer.Token{Value: 2, Type: lexer.NUMBER}
-	t3 := lexer.Token{Value: 3, Type: lexer.NUMBER}
-	t4 := lexer.Token{Value: 4, Type: lexer.NUMBER}
-	plus := lexer.Token{Value: nil, Type: lexer.PLUS}
-	star := lexer.Token{Value: nil, Type: lexer.STAR}
-	root := parser.Parse([]lexer.Token{t2, plus, t3, star, t4})
+	reader := bufio.NewReader(os.Stdin)
+	for {
+		fmt.Print("> ")
+		line, err := reader.ReadString('\n')
+		if err != nil {
+			fmt.Println("Error: ", err)
+			return
+		}
 
-	root.Print()
+		line = strings.TrimSpace(line)
+		if line == "exit" {
+			fmt.Println("Bye from marcomit")
+			return
+		}
+
+		tokens, err := lexer.Tokenize(line)
+		if err != nil {
+			fmt.Print("Error: ", err)
+			continue
+		}
+		root := parser.Parse(tokens)
+
+		fmt.Println(root.Evaluate())
+	}
 }

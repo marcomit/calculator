@@ -1,6 +1,10 @@
 package lexer
 
-import "fmt"
+import (
+	"fmt"
+	"strconv"
+	"unicode"
+)
 
 type TokenType uint8
 
@@ -15,6 +19,44 @@ const (
 	SLASH             = iota
 )
 
+type Token struct {
+	Type  TokenType
+	Value any
+}
+
+type StringIterator struct {
+	runes []rune
+	index int
+}
+
+func (s *StringIterator) peek() rune {
+	return s.runes[s.index]
+}
+
+func (s *StringIterator) hasPrev() bool {
+	return s.index > 0
+}
+func (s *StringIterator) has() bool {
+	return s.index <= len(s.runes)-1
+}
+func (s *StringIterator) hasNext() bool {
+	return s.index < len(s.runes)-1
+}
+func (s *StringIterator) next() rune {
+	if !s.hasNext() {
+		panic("Trying to call next at the end of iteration")
+	}
+	s.index++
+	return s.peek()
+}
+func (s *StringIterator) prev() rune {
+	if !s.hasPrev() {
+		panic("Trying to call prev at the start of iteration")
+	}
+	s.index--
+	return s.peek()
+}
+
 func (t TokenType) Priority() int {
 	switch t {
 	case PLUS, MINUS:
@@ -24,11 +66,6 @@ func (t TokenType) Priority() int {
 	default:
 		return 255
 	}
-}
-
-type Token struct {
-	Type  TokenType
-	Value any
 }
 
 func (token *Token) ToString() string {
@@ -49,4 +86,48 @@ func (token *Token) ToString() string {
 		return "null"
 	}
 	return fmt.Sprintf("%v", token.Value)
+}
+
+func Tokenize(content string) ([]Token, error) {
+	tokens := []Token{}
+
+	iter := &StringIterator{runes: []rune(content), index: 0}
+
+	for iter.has() {
+		if unicode.IsDigit(iter.peek()) {
+			acc := ""
+			for unicode.IsDigit(iter.peek()) {
+				acc += string(iter.peek())
+				if !iter.hasNext() {
+					break
+				}
+				iter.next()
+			}
+			n, _ := strconv.Atoi(acc)
+			tokens = append(tokens, Token{Type: NUMBER, Value: n})
+			// continue
+		}
+		switch iter.peek() {
+		case '(':
+			tokens = append(tokens, Token{Type: LPAREN, Value: "("})
+		case ')':
+			tokens = append(tokens, Token{Type: RPAREN, Value: ")"})
+		case '+':
+			tokens = append(tokens, Token{Type: PLUS, Value: "+"})
+		case '-':
+			tokens = append(tokens, Token{Type: MINUS, Value: "-"})
+		case '*':
+			tokens = append(tokens, Token{Type: STAR, Value: "*"})
+		case '/':
+			tokens = append(tokens, Token{Type: SLASH, Value: "/"})
+		default:
+			return []Token{}, fmt.Errorf("Invalid token %v\n", string(iter.peek()))
+		}
+		if !iter.hasNext() {
+			break
+		}
+		iter.next()
+	}
+
+	return tokens, nil
 }
