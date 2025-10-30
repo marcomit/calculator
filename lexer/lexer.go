@@ -1,6 +1,7 @@
 package lexer
 
 import (
+	"calculator/util"
 	"fmt"
 	"strconv"
 	"unicode"
@@ -22,39 +23,6 @@ const (
 type Token struct {
 	Type  TokenType
 	Value any
-}
-
-type StringIterator struct {
-	runes []rune
-	index int
-}
-
-func (s *StringIterator) peek() rune {
-	return s.runes[s.index]
-}
-
-func (s *StringIterator) hasPrev() bool {
-	return s.index > 0
-}
-func (s *StringIterator) has() bool {
-	return s.index <= len(s.runes)-1
-}
-func (s *StringIterator) hasNext() bool {
-	return s.index < len(s.runes)-1
-}
-func (s *StringIterator) next() rune {
-	if !s.hasNext() {
-		panic("Trying to call next at the end of iteration")
-	}
-	s.index++
-	return s.peek()
-}
-func (s *StringIterator) prev() rune {
-	if !s.hasPrev() {
-		panic("Trying to call prev at the start of iteration")
-	}
-	s.index--
-	return s.peek()
 }
 
 func (t TokenType) Priority() int {
@@ -91,27 +59,19 @@ func (token *Token) ToString() string {
 func Tokenize(content string) ([]Token, error) {
 	tokens := []Token{}
 
-	iter := &StringIterator{runes: []rune(content), index: 0}
+	iter := util.NewIterator([]rune(content))
 
-	for iter.has() {
-		if unicode.IsDigit(iter.peek()) {
+	for iter.HasNext() {
+		if unicode.IsDigit(iter.Peek()) {
 			acc := ""
-			for unicode.IsDigit(iter.peek()) {
-				acc += string(iter.peek())
-				if !iter.hasNext() {
-					break
-				}
-				iter.next()
+			for iter.HasNext() && unicode.IsDigit(iter.Peek()) {
+				acc += string(iter.Peek())
+				iter.Next()
 			}
 			n, _ := strconv.Atoi(acc)
 			tokens = append(tokens, Token{Type: NUMBER, Value: n})
-			if !iter.hasNext() {
-				break
-			}
-			iter.next()
-			continue
 		}
-		switch iter.peek() {
+		switch iter.Peek() {
 		case '(':
 			tokens = append(tokens, Token{Type: LPAREN, Value: "("})
 		case ')':
@@ -125,10 +85,7 @@ func Tokenize(content string) ([]Token, error) {
 		case '/':
 			tokens = append(tokens, Token{Type: SLASH, Value: "/"})
 		}
-		if !iter.hasNext() {
-			break
-		}
-		iter.next()
+		iter.Next()
 	}
 
 	return tokens, nil

@@ -2,15 +2,7 @@ package parser
 
 import (
 	"calculator/lexer"
-	"fmt"
-	"math"
-)
-
-type ASTNodeType int
-
-const (
-	AST_NODE_BINARY  ASTNodeType = iota
-	AST_NODE_LITERAL             = iota
+	"calculator/util"
 )
 
 type ASTNode struct {
@@ -34,36 +26,6 @@ func (ast *ASTNode) MaxDepth() uint8 {
 		return 0
 	}
 	return 1 + max(ast.Left.MaxDepth(), ast.Right.MaxDepth())
-}
-
-func (ast *ASTNode) Print() {
-	queue := []*ASTNode{}
-	queue = append(queue, ast)
-	depth := math.Pow(2, float64(ast.MaxDepth()))
-	level := 0
-	for len(queue) > 0 {
-		s := len(queue)
-		spaces := float64(int(depth)-s) / float64(s+1)
-		str := ""
-		for range int(spaces) {
-			str += " "
-		}
-		for range s {
-			node := queue[0]
-			queue = queue[1:]
-			fmt.Print(str)
-
-			if node != nil {
-				fmt.Print(node.Token.ToString())
-				queue = append(queue, node.Left)
-				queue = append(queue, node.Right)
-			} else {
-				print(" ")
-			}
-		}
-		level++
-		fmt.Println()
-	}
 }
 
 // The idea is to append the incoming child
@@ -109,7 +71,9 @@ func Parse(tokens []lexer.Token) *ASTNode {
 	parent := root
 	var depth uint8 = 0
 
-	for _, token := range tokens {
+	iter := util.NewIterator(tokens)
+	for iter.HasNext() {
+		token := iter.Peek()
 		if token.Type == lexer.LPAREN {
 			depth++
 			continue
@@ -137,6 +101,11 @@ func Parse(tokens []lexer.Token) *ASTNode {
 
 		parent = node
 
+		iter.Next()
+	}
+
+	if depth != 0 {
+		panic("Mismatch parenthesis")
 	}
 
 	return root.Right
