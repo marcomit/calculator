@@ -105,7 +105,11 @@ func Tokenize(content string) ([]Token, error) {
 			}
 			n, _ := strconv.Atoi(acc)
 			tokens = append(tokens, Token{Type: NUMBER, Value: n})
-			// continue
+			if !iter.hasNext() {
+				break
+			}
+			iter.next()
+			continue
 		}
 		switch iter.peek() {
 		case '(':
@@ -120,8 +124,6 @@ func Tokenize(content string) ([]Token, error) {
 			tokens = append(tokens, Token{Type: STAR, Value: "*"})
 		case '/':
 			tokens = append(tokens, Token{Type: SLASH, Value: "/"})
-		default:
-			return []Token{}, fmt.Errorf("Invalid token %v\n", string(iter.peek()))
 		}
 		if !iter.hasNext() {
 			break
