@@ -3,6 +3,8 @@ package parser
 import (
 	"calculator/lexer"
 	"calculator/util"
+	"fmt"
+	"strings"
 )
 
 type ASTNode struct {
@@ -21,11 +23,42 @@ func (node *ASTNode) IsHigherPriority(other *ASTNode) bool {
 	return node.Token.Type.Priority() > other.Token.Type.Priority()
 }
 
-func (ast *ASTNode) MaxDepth() uint8 {
+func (ast *ASTNode) MaxDepth() int {
 	if ast == nil {
 		return 0
 	}
 	return 1 + max(ast.Left.MaxDepth(), ast.Right.MaxDepth())
+}
+
+func (root *ASTNode) Print() {
+	maxDepth := root.MaxDepth()
+	layer := 0
+	queue := []*ASTNode{}
+	queue = append(queue, root)
+	valid := true
+	for valid {
+		s := len(queue)
+		valid = false
+		spaces := strings.Repeat(" ", (1 << (maxDepth - layer)))
+		for range s {
+			node := queue[0]
+			queue = queue[1:]
+			print(spaces)
+			if node == nil {
+				print(" ")
+				queue = append(queue, nil)
+				queue = append(queue, nil)
+			} else {
+				valid = true
+				print(node.Token.ToString())
+				queue = append(queue, node.Left)
+				queue = append(queue, node.Right)
+			}
+		}
+		println()
+		layer++
+	}
+	println()
 }
 
 // The idea is to append the incoming child
@@ -62,7 +95,7 @@ func (ast *ASTNode) MaxDepth() uint8 {
 //	 2   *
 //	    / \
 //	   3   4
-func Parse(tokens []lexer.Token) *ASTNode {
+func Parse(tokens []lexer.Token) (*ASTNode, error) {
 	// UNTYPED token has the lowest priority as possible
 	// such that the root remain at the top
 	// avoiding swap a node with the root.
@@ -76,11 +109,20 @@ func Parse(tokens []lexer.Token) *ASTNode {
 		token := iter.Peek()
 		if token.Type == lexer.LPAREN {
 			depth++
+			iter.Next()
 			continue
 		}
 		if token.Type == lexer.RPAREN {
 			depth--
+			iter.Next()
 			continue
+		}
+
+		if iter.HasPrev() {
+			prev := iter.GetPrev().Type
+			if prev == token.Type {
+				return nil, fmt.Errorf("Invalid operator")
+			}
 		}
 
 		node := &ASTNode{Token: token, Depth: depth}
@@ -108,10 +150,13 @@ func Parse(tokens []lexer.Token) *ASTNode {
 		panic("Mismatch parenthesis")
 	}
 
-	return root.Right
+	return root.Right, nil
 }
 
 func (ast *ASTNode) Evaluate() int {
+	if ast == nil {
+		return 0
+	}
 	if ast.Token.Type == lexer.PLUS {
 		return ast.Left.Evaluate() + ast.Right.Evaluate()
 	}

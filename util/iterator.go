@@ -14,7 +14,7 @@ func (iter *Iterator[T]) HasNext() bool {
 }
 
 func (iter *Iterator[T]) HasPrev() bool {
-	return iter.index <= 0
+	return iter.index > 0
 }
 
 func (iter *Iterator[T]) Check() bool {
@@ -29,25 +29,24 @@ func (iter *Iterator[T]) checkIndex(i int) {
 }
 
 func (iter *Iterator[T]) GetNext() T {
-	iter.checkIndex(iter.index + 1)
 	return iter.list[iter.index+1]
 }
 
 func (iter *Iterator[T]) GetPrev() T {
-	iter.checkIndex(iter.index - 1)
 	return iter.list[iter.index-1]
 }
 
 func (iter *Iterator[T]) Next() T {
-	// iter.checkIndex(iter.index + 1)
+	iter.checkIndex(iter.index)
+	value := iter.list[iter.index]
 	iter.index++
-	return iter.Peek()
+	return value
 }
 
 func (iter *Iterator[T]) Prev() T {
-	iter.checkIndex(iter.index - 1)
+	value := iter.Peek()
 	iter.index--
-	return iter.Peek()
+	return value
 }
 func (iter *Iterator[T]) Peek() T {
 	return iter.list[iter.index]

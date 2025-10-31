@@ -57,36 +57,38 @@ func (token *Token) ToString() string {
 }
 
 func Tokenize(content string) ([]Token, error) {
+	types := make(map[rune]TokenType)
+	types['+'] = PLUS
+	types['-'] = MINUS
+	types['*'] = STAR
+	types['/'] = SLASH
 	tokens := []Token{}
-
 	iter := util.NewIterator([]rune(content))
 
 	for iter.HasNext() {
-		if unicode.IsDigit(iter.Peek()) {
-			acc := ""
+		curr := iter.Next()
+
+		if unicode.IsDigit(curr) {
+			acc := string(curr)
 			for iter.HasNext() && unicode.IsDigit(iter.Peek()) {
-				acc += string(iter.Peek())
-				iter.Next()
+				acc += string(iter.Next())
 			}
 			n, _ := strconv.Atoi(acc)
 			tokens = append(tokens, Token{Type: NUMBER, Value: n})
+			continue
 		}
-		switch iter.Peek() {
+		switch curr {
 		case '(':
 			tokens = append(tokens, Token{Type: LPAREN, Value: "("})
 		case ')':
 			tokens = append(tokens, Token{Type: RPAREN, Value: ")"})
-		case '+':
-			tokens = append(tokens, Token{Type: PLUS, Value: "+"})
-		case '-':
-			tokens = append(tokens, Token{Type: MINUS, Value: "-"})
-		case '*':
-			tokens = append(tokens, Token{Type: STAR, Value: "*"})
-		case '/':
-			tokens = append(tokens, Token{Type: SLASH, Value: "/"})
+		case '+', '-', '*', '/':
+			tokens = append(tokens, Token{Type: types[curr], Value: string(curr)})
+		case ' ':
+			continue
+		default:
+			return []Token{}, fmt.Errorf("Invalid token %v", string(curr))
 		}
-		iter.Next()
 	}
-
 	return tokens, nil
 }
